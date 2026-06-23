@@ -16,17 +16,20 @@ module.exports = async (req, res) => {
     });
   }
 
-  const what = (req.query.what || "part time").toString().slice(0, 80);
+  const what = (req.query.what || "").toString().slice(0, 80);
+  const type = (req.query.type || "part_time").toString();
   const where = (req.query.where || "").toString().slice(0, 80);
   const distance = Math.min(parseInt(req.query.distance, 10) || 12, 50);
   const page = Math.min(parseInt(req.query.page, 10) || 1, 10);
   if (!where) return res.status(400).json({ error: "Missing location." });
 
-  const url =
+  let url =
     `https://api.adzuna.com/v1/api/jobs/gb/search/${page}` +
     `?app_id=${encodeURIComponent(appId)}&app_key=${encodeURIComponent(appKey)}` +
-    `&results_per_page=25&what=${encodeURIComponent(what)}` +
-    `&where=${encodeURIComponent(where)}&distance=${distance}&content-type=application/json`;
+    `&results_per_page=25&where=${encodeURIComponent(where)}&distance=${distance}&content-type=application/json`;
+  if (what) url += `&what=${encodeURIComponent(what)}`;
+  if (type === "part_time") url += "&part_time=1";
+  else if (type === "full_time") url += "&full_time=1";
 
   try {
     const r = await fetch(url);

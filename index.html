@@ -178,7 +178,7 @@
 
   <div class="tabs">
     <button class="tab active" data-view="find">🔎 Find places</button>
-    <button class="tab" data-view="jobs">💼 Part-time jobs</button>
+    <button class="tab" data-view="jobs">💼 Jobs</button>
     <button class="tab" data-view="apps">📋 My applications <span class="tabnum" id="appsCount">0</span></button>
   </div>
 
@@ -229,11 +229,18 @@
   <div id="jobsView" style="display:none">
     <div class="panel">
       <div class="row3">
-        <div><label>Keyword (optional)</label><input id="jobWhat" placeholder="e.g. retail, café, weekend" /></div>
+        <div><label>Type</label>
+          <select id="jobType">
+            <option value="part_time">Part-time</option>
+            <option value="full_time">Full-time</option>
+            <option value="any">Any</option>
+          </select>
+        </div>
         <div><label>Postcode or town</label><input id="jobWhere" placeholder="e.g. M1 1AE or Leeds" /></div>
         <div><label>&nbsp;</label><button class="btn" id="jobSearchBtn">💼 Find jobs</button></div>
       </div>
-      <div class="hint" style="margin-top:10px">💼 Live UK part-time listings via Adzuna. Tap any job to apply on the original site.</div>
+      <div style="margin-top:12px"><label>Keyword (optional)</label><input id="jobWhat" placeholder="e.g. retail, café, weekend, tutoring" /></div>
+      <div class="hint" style="margin-top:10px">💼 Live UK listings via Adzuna. Tap any job to apply on the original site.</div>
     </div>
     <div id="jobStatus"></div>
     <div class="grid" id="jobResults"></div>
@@ -470,17 +477,18 @@ function render(){
     const st=statusOf(b.id);
     const el=document.createElement("div");
     el.className="biz"+(st?" tracked":"");
-    const maps=`https://www.google.com/maps/search/?api=1&query=${b.lat},${b.lon}`;
+    const mq=b.addr?encodeURIComponent(b.name+", "+b.addr):`${b.lat},${b.lon}`;
+    const maps=`https://www.google.com/maps/search/?api=1&query=${mq}`;
     el.innerHTML=`
       <div style="flex:1;min-width:0">
         <h3>${esc(b.name)} ${st?`<span class="badge" style="background:${ST[st].c}">${ST[st].t}</span>`:""}</h3>
         <span class="pill">${esc(b.label)}</span>
         <div class="meta">
           <span class="dist">${b.dist<1?Math.round(b.dist*1000)+" m":b.dist.toFixed(1)+" km"} away</span>
-          ${b.addr?`<span>📍 ${esc(b.addr)}</span>`:""}
-          ${b.phone?`<span>📞 ${esc(b.phone)}</span>`:""}
+          ${b.addr?`<span>📍 <a href="${maps}" target="_blank" rel="noopener">${esc(b.addr)}</a></span>`:""}
+          ${b.phone?`<span>📞 <a href="tel:${esc(b.phone.replace(/\s+/g,''))}">${esc(b.phone)}</a></span>`:""}
           ${b.website?`<span>🌐 <a href="${esc(b.website)}" target="_blank" rel="noopener">website</a></span>`:""}
-          <span>🗺️ <a href="${maps}" target="_blank" rel="noopener">map</a></span>
+          <span><a href="${maps}" target="_blank" rel="noopener">🗺️ Open in Maps ↗</a></span>
         </div>
       </div>
       <div class="actions">
@@ -631,17 +639,20 @@ updateTabCount();
 //// ---- part-time jobs (via /api/jobs serverless proxy — key stays server-side) ----
 const jobResultsEl=$("jobResults"), jobStatusEl=$("jobStatus");
 $("jobWhere").value=store.get("ws_loc","")||"";
+$("jobType").value=store.get("ws_jobtype","part_time")||"part_time";
 
 async function jobsSearch(){
   let where=$("jobWhere").value.trim();
-  const what=$("jobWhat").value.trim()||"part time";
+  const what=$("jobWhat").value.trim();
+  const type=$("jobType").value; store.set("ws_jobtype",type);
+  const tw = type==="full_time" ? "full-time " : type==="part_time" ? "part-time " : "";
   if(!where){jobStatusEl.textContent="Enter a postcode or town first.";return;}
   store.set("ws_loc",where);
-  jobStatusEl.textContent="💼 Finding part-time jobs…"; jobResultsEl.innerHTML="";
+  jobStatusEl.textContent=`💼 Finding ${tw}jobs…`; jobResultsEl.innerHTML="";
   if(isPostcode(where)){try{const g=await geocode(where);if(g&&g.name)where=g.name;}catch{}}
   let data;
   try{
-    const r=await fetch(`/api/jobs?what=${encodeURIComponent(what)}&where=${encodeURIComponent(where)}&distance=12`);
+    const r=await fetch(`/api/jobs?type=${encodeURIComponent(type)}${what?`&what=${encodeURIComponent(what)}`:""}&where=${encodeURIComponent(where)}&distance=12`);
     data=await r.json().catch(()=>({}));
     if(!r.ok) throw new Error(data.error||("HTTP "+r.status));
   }catch(e){
@@ -649,8 +660,8 @@ async function jobsSearch(){
     return;
   }
   const jobs=data.results||[];
-  if(!jobs.length){jobStatusEl.textContent="No part-time jobs found here. Try a different keyword or a nearby town.";return;}
-  jobStatusEl.textContent=`✅ Found ${jobs.length} part-time jobs near ${esc(where)}.`;
+  if(!jobs.length){jobStatusEl.textContent=`No ${tw}jobs found here. Try a different keyword or a nearby town.`;return;}
+  jobStatusEl.textContent=`✅ Found ${jobs.length} ${tw}jobs near ${esc(where)}.`;
   jobResultsEl.innerHTML="";
   jobs.forEach(j=>{
     const el=document.createElement("div"); el.className="biz";
