@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WorkScout — find local work experience near you</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fff7ef; --card:#ffffff; --line:#f2e6d8;
+    --ink:#41342c; --muted:#9b8a7d;
+    --coral:#ff7a59; --coral-d:#ef5e3b; --amber:#ffb23e; --mint:#23b083; --violet:#8b7bf7;
+    --ring:rgba(255,122,89,.22); --shadow:0 12px 34px rgba(214,150,110,.20);
+    --shadow-sm:0 5px 16px rgba(214,150,110,.15); --r:18px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--ink);position:relative;overflow-x:hidden;
+    font-family:"Nunito",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(1100px 560px at 92% -12%, #ffe7cf 0%, rgba(255,231,207,0) 55%),
+      radial-gradient(820px 480px at -12% 8%, #ffdce4 0%, rgba(255,220,228,0) 52%),
+      linear-gradient(180deg,#fff8f0,#fff1e6);}
+  /* soft decorative blobs */
+  .blobs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .blob{position:absolute;border-radius:50%;filter:blur(46px);opacity:.5}
+  .b1{width:340px;height:340px;background:#ffd2a6;top:-90px;right:-70px}
+  .b2{width:280px;height:280px;background:#ffc6d1;bottom:8%;left:-100px}
+  .b3{width:220px;height:220px;background:#c9ead8;top:42%;right:-60px;opacity:.45}
+  a{color:var(--coral-d);font-weight:700;text-decoration:none}
+  a:hover{text-decoration:underline}
+  input[type=checkbox]{accent-color:var(--coral);width:16px;height:16px}
+  .wrap{max-width:880px;margin:0 auto;padding:24px 18px 96px;position:relative;z-index:1}
+
+  /* hero */
+  .hero{display:flex;align-items:center;gap:16px;margin:6px 0 24px}
+  .brand{display:flex;align-items:center;gap:15px;flex:1;min-width:0}
+  .logo{width:56px;height:56px;border-radius:17px;background:linear-gradient(135deg,var(--coral),var(--amber));
+    display:grid;place-items:center;box-shadow:var(--shadow-sm);flex:0 0 auto}
+  .logo svg{width:32px;height:32px}
+  h1{font-size:31px;margin:0;font-weight:900;letter-spacing:-.6px;line-height:1.02}
+  .tag{color:var(--muted);font-size:15px;font-weight:700;margin-top:7px;max-width:540px}
+  .hero-art{flex:0 0 auto;width:160px;height:auto}
+  @media(max-width:640px){.hero-art{display:none}}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}
+  label{display:block;font-size:12px;color:var(--muted);margin:0 0 7px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+  input,select{width:100%;background:#fffdfb;border:2px solid var(--line);color:var(--ink);
+    border-radius:13px;padding:12px 13px;font-size:15px;font-weight:700;font-family:inherit;outline:none;transition:.15s}
+  input::placeholder{color:#cab9aa;font-weight:600}
+  input:focus,select:focus{border-color:var(--coral);box-shadow:0 0 0 4px var(--ring)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .row3{display:grid;grid-template-columns:1.5fr 1fr auto;gap:14px;align-items:end}
+  button{cursor:pointer;border:none;border-radius:13px;font-weight:800;font-size:15px;font-family:inherit;transition:.15s}
+  .btn{background:linear-gradient(135deg,var(--coral),var(--coral-d));color:#fff;padding:13px 20px;
+    box-shadow:0 7px 18px rgba(255,110,80,.36)}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(255,110,80,.44)}
+  .btn:active{transform:translateY(0)}
+  .btn.alt{background:#fff3ea;color:var(--coral-d);border:2px solid #ffd9c8}
+  .btn.alt:hover{background:#ffe8db;transform:none;box-shadow:none}
+  .btn.small{padding:9px 13px;font-size:13px;border-radius:11px}
+  details.details summary{cursor:pointer;color:var(--ink);font-size:14.5px;font-weight:800;list-style:none}
+  details.details summary::-webkit-details-marker{display:none}
+  details.details[open] summary{margin-bottom:14px}
+  .hint{color:var(--muted);font-size:12.5px;font-weight:600;margin-top:8px}
+  #status{min-height:24px;color:var(--ink);font-size:14.5px;font-weight:800;margin:8px 2px 14px}
+  .controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:6px 2px 16px}
+  .count{color:var(--muted);font-size:14px;font-weight:700}
+  .grid{display:grid;gap:14px}
+  .biz{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;
+    display:flex;gap:14px;justify-content:space-between;align-items:flex-start;box-shadow:var(--shadow-sm);transition:.15s}
+  .biz:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+  .biz.done{opacity:.5}
+  .biz h3{margin:0 0 7px;font-size:17px;font-weight:800}
+  .biz .meta{color:var(--muted);font-size:13px;font-weight:700;display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px}
+  .biz .meta a{color:var(--violet)}
+  .pill{display:inline-block;background:#fff0db;color:#bd7714;font-size:11px;font-weight:800;
+    padding:4px 11px;border-radius:999px;letter-spacing:.03em;text-transform:uppercase}
+  .biz .actions{display:flex;flex-direction:column;gap:8px;flex:0 0 auto;align-items:stretch;min-width:132px}
+  .dist{color:var(--mint);font-weight:900;font-size:13px;white-space:nowrap}
+  .empty{text-align:center;color:var(--muted);font-weight:700;padding:44px 14px;background:var(--card);
+    border:2px dashed var(--line);border-radius:var(--r)}
+  footer{color:var(--muted);font-size:12.5px;font-weight:600;margin-top:28px;line-height:1.65;
+    border-top:1px solid var(--line);padding-top:18px}
+  footer strong{color:var(--ink)}
+  /* tabs */
+  .tabs{display:flex;gap:6px;margin:2px 0 16px;background:#fff3ea;padding:6px;border-radius:15px;border:1px solid var(--line);box-shadow:var(--shadow-sm)}
+  .tab{flex:1;background:transparent;color:var(--muted);padding:11px 12px;border-radius:11px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;gap:8px}
+  .tab.active{background:#fff;color:var(--ink);box-shadow:var(--shadow-sm)}
+  .tabnum{background:var(--coral);color:#fff;border-radius:999px;font-size:12px;min-width:20px;height:20px;
+    display:inline-grid;place-items:center;padding:0 6px}
+  /* stats */
+  .statsbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:11px 16px;box-shadow:var(--shadow-sm);text-align:center;min-width:84px}
+  .stat b{font-size:20px;display:block;color:var(--ink);line-height:1.1}
+  .stat span{color:var(--muted);font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em}
+  /* status badges + controls */
+  .badge{display:inline-block;color:#fff;font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;
+    text-transform:uppercase;letter-spacing:.03em;vertical-align:middle}
+  .statusSel{width:auto;padding:9px 11px;font-size:13px;font-weight:800;border-radius:11px;border:2px solid var(--line);background:#fffdfb}
+  .ago{color:var(--mint);font-weight:800}
+  .biz.tracked{border-color:#ffd9c8}
+  .notes{width:100%;height:40px;background:#fffaf4;border:2px solid var(--line);border-radius:12px;padding:9px 11px;
+    font:13px/1.4 "Nunito",sans-serif;font-weight:600;color:var(--ink);resize:vertical;margin-top:10px;outline:none}
+  .notes:focus{border-color:var(--coral);box-shadow:0 0 0 3px var(--ring)}
+  .adzbox{background:#fff6ee;border:1px solid var(--line);border-radius:13px;padding:12px;margin-top:12px}
+  #jobStatus{min-height:24px;color:var(--ink);font-size:14.5px;font-weight:800;margin:8px 2px 14px}
+  /* modal */
+  .modal{position:fixed;inset:0;background:rgba(65,52,44,.5);backdrop-filter:blur(3px);display:none;place-items:center;padding:16px;z-index:50}
+  .modal.open{display:grid}
+  .sheet{background:var(--card);border:1px solid var(--line);border-radius:22px;max-width:620px;width:100%;padding:22px;box-shadow:var(--shadow)}
+  .sheet h2{margin:0 0 4px;font-size:19px;font-weight:900}
+  #mBody{width:100%;min-height:280px;background:#fffaf4;border:2px solid var(--line);color:var(--ink);
+    border-radius:13px;padding:13px;font:14px/1.6 "Nunito",ui-monospace,Menlo,Consolas,monospace;font-weight:600;resize:vertical;outline:none}
+  #mBody:focus{border-color:var(--coral);box-shadow:0 0 0 4px var(--ring)}
+  .mtools{display:flex;align-items:center;gap:10px;margin:6px 0 10px}
+  .mtools select{width:auto}
+  .checklist{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;background:#fff6ee;border:1px solid var(--line);
+    border-radius:12px;padding:11px 13px;margin-top:11px;font-size:13px;font-weight:800;color:var(--coral-d)}
+  .checklist label{display:flex;align-items:center;gap:6px;margin:0;font-weight:700;color:var(--muted);
+    text-transform:none;letter-spacing:0;font-size:13px}
+  .sheet .bar{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+  @media(max-width:560px){.row,.row3{grid-template-columns:1fr}.biz{flex-direction:column}.biz .actions{flex-direction:row;min-width:0}}
+</style>
+</head>
+<body>
+<div class="blobs"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span></div>
+<div class="wrap">
+  <header class="hero">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="12" cy="12" r="9.2" stroke="#fff" stroke-width="2"/>
+          <path d="M12 6.4l1.9 4.1 4.1 1.9-4.1 1.9L12 18.4l-1.9-4.1L6 12.4l4.1-1.9L12 6.4z" fill="#fff"/>
+        </svg>
+      </div>
+      <div>
+        <h1>WorkScout</h1>
+        <div class="tag">Type your subject + postcode → find local places to ask for work experience. ✨</div>
+      </div>
+    </div>
+    <svg class="hero-art" viewBox="0 0 200 168" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="166" cy="30" r="13" fill="#ffc15e"/>
+      <g stroke="#ffc15e" stroke-width="3" stroke-linecap="round">
+        <line x1="166" y1="8" x2="166" y2="2"/><line x1="186" y1="18" x2="191" y2="14"/>
+        <line x1="146" y1="18" x2="141" y2="14"/><line x1="188" y1="43" x2="193" y2="46"/>
+      </g>
+      <rect x="20" y="44" width="128" height="108" rx="18" fill="#ffffff" stroke="#f2e6d8" stroke-width="3"/>
+      <rect x="34" y="60" width="44" height="30" rx="9" fill="#ffe7d6"/>
+      <rect x="86" y="98" width="46" height="34" rx="9" fill="#d9efe2"/>
+      <path d="M46 132 C 62 104, 96 122, 110 82" stroke="#ff7a59" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="0.5 9" fill="none"/>
+      <circle cx="46" cy="132" r="5.5" fill="#23b083"/><circle cx="46" cy="132" r="2" fill="#fff"/>
+      <path d="M110 56c-9.4 0-17 7.2-17 16.1 0 11.7 17 27.9 17 27.9s17-16.2 17-27.9C127 63.2 119.4 56 110 56z" fill="#ff6b4a"/>
+      <circle cx="110" cy="72" r="6.4" fill="#fff"/>
+      <path d="M150 96l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5z" fill="#8b7bf7"/>
+      <path d="M30 28l1.6 4 4 1.6-4 1.6L30 39l-1.6-4-4-1.6 4-1.6L30 28z" fill="#ffb23e"/>
+    </svg>
+  </header>
+
+  <details class="details panel" id="meAccordion">
+    <summary>⚙️ Your details (used to write your emails) — tap to edit</summary>
+    <div class="row">
+      <div><label>Your name</label><input id="meName" placeholder="e.g. Alex Smith" /></div>
+      <div><label>You are a…</label>
+        <select id="meLevel">
+          <option>sixth-form student</option>
+          <option>college student</option>
+          <option>university student</option>
+          <option>GCSE student</option>
+          <option>school student</option>
+        </select>
+      </div>
+    </div>
+    <div class="hint">Saved on your device only — never uploaded anywhere.</div>
+  </details>
+
+  <div class="tabs">
+    <button class="tab active" data-view="find">🔎 Find places</button>
+    <button class="tab" data-view="jobs">💼 Part-time jobs</button>
+    <button class="tab" data-view="apps">📋 My applications <span class="tabnum" id="appsCount">0</span></button>
+  </div>
+
+  <div id="findView">
+  <div class="panel">
+    <div class="row3">
+      <div>
+        <label>Field / subject</label>
+        <select id="subject"></select>
+      </div>
+      <div>
+        <label>Postcode or town</label>
+        <input id="loc" placeholder="e.g. SW1A 1AA or Leeds" autocomplete="postal-code" />
+      </div>
+      <div>
+        <label>Within</label>
+        <select id="radius">
+          <option value="2000">2 km</option>
+          <option value="5000" selected>5 km</option>
+          <option value="10000">10 km</option>
+          <option value="20000">20 km</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:10px">
+      <button class="btn" id="searchBtn" style="flex:1">🔎 Find places near me</button>
+    </div>
+    <div class="hint">UK postcodes work best. We use free open data (OpenStreetMap) — no sign-up, no cost.</div>
+  </div>
+
+  <div id="status"></div>
+
+  <div class="controls" id="controls" style="display:none">
+    <span class="count" id="count"></span>
+    <label style="display:flex;align-items:center;gap:7px;color:var(--muted);font-size:13px;font-weight:600;margin:0">
+      <input type="checkbox" id="hideDone" style="width:auto" /> Hide ones I'm tracking
+    </label>
+  </div>
+
+  <div class="grid" id="results"></div>
+  </div><!-- /findView -->
+
+  <div id="appsView" style="display:none">
+    <div class="statsbar" id="appsStats"></div>
+    <div class="grid" id="appsList"></div>
+  </div>
+
+  <div id="jobsView" style="display:none">
+    <div class="panel">
+      <div class="row3">
+        <div><label>Keyword (optional)</label><input id="jobWhat" placeholder="e.g. retail, café, weekend" /></div>
+        <div><label>Postcode or town</label><input id="jobWhere" placeholder="e.g. M1 1AE or Leeds" /></div>
+        <div><label>&nbsp;</label><button class="btn" id="jobSearchBtn">💼 Find jobs</button></div>
+      </div>
+      <details class="details adzbox" id="adzKeyBox">
+        <summary>🔑 One-time setup: free Adzuna key (≈2 mins) — tap to set up</summary>
+        <div class="hint" style="margin:6px 0 10px">Live job listings come from <a href="https://developer.adzuna.com/" target="_blank" rel="noopener">Adzuna</a>. Sign up free, create an app, then paste your <b>App ID</b> + <b>App Key</b> below. Saved only on your device.</div>
+        <div class="row">
+          <div><label>Adzuna App ID</label><input id="adzId" placeholder="app_id" autocomplete="off" /></div>
+          <div><label>Adzuna App Key</label><input id="adzKey" placeholder="app_key" autocomplete="off" /></div>
+        </div>
+      </details>
+    </div>
+    <div id="jobStatus"></div>
+    <div class="grid" id="jobResults"></div>
+  </div>
+
+  <footer>
+    <strong>How to use this:</strong> these are real local businesses/organisations in your field — most won't have a "work experience" advert, because the way you get local experience is to <em>ask</em>. WorkScout finds them and writes the email; you send it. Sending 10–20 polite, tailored emails is how placements actually happen.<br/><br/>
+    Results come from OpenStreetMap and may be incomplete or out of date. WorkScout doesn't contact anyone for you and isn't affiliated with these businesses. Be polite and professional. 🙂
+  </footer>
+</div>
+
+<!-- Email modal -->
+<div class="modal" id="modal">
+  <div class="sheet">
+    <h2 id="mTitle">Speculative email</h2>
+    <div class="hint" id="mSub" style="margin-bottom:10px"></div>
+    <div class="mtools">
+      <label style="margin:0">Email type</label>
+      <select id="mType">
+        <option value="work_experience">🎓 Work experience</option>
+        <option value="part_time">💼 Part-time job</option>
+        <option value="shadowing">👀 Job shadowing</option>
+        <option value="apprenticeship">🛠️ Apprenticeship</option>
+      </select>
+    </div>
+    <textarea id="mBody"></textarea>
+    <div class="checklist">
+      <span>📎 Before you send:</span>
+      <label><input type="checkbox"> Attach your CV</label>
+      <label><input type="checkbox"> Personalise the opening line</label>
+      <label><input type="checkbox"> Check their name</label>
+    </div>
+    <div class="bar">
+      <button class="btn alt" id="mClose">Close</button>
+      <button class="btn alt" id="mMail">Open in email app</button>
+      <button class="btn" id="mCopy">Copy email</button>
+    </div>
+  </div>
+</div>
+
+<script>
+//// ---- Subject → OpenStreetMap business-type mapping (sensible defaults) ----
+const SUBJECTS = {
+  "Economics / Finance / Business": ['"amenity"="bank"','"office"="accountant"','"office"="financial"','"office"="financial_advisor"','"office"="insurance"','"office"="estate_agent"','"office"="tax_advisor"','"office"="company"'],
+  "Law": ['"office"="lawyer"','"office"="notary"'],
+  "Medicine / Healthcare": ['"amenity"="hospital"','"amenity"="clinic"','"amenity"="doctors"','"amenity"="pharmacy"','"amenity"="dentist"','"healthcare"="centre"'],
+  "Veterinary / Animals": ['"amenity"="veterinary"','"shop"="pet"','"shop"="pet_grooming"'],
+  "Engineering": ['"office"="engineering"','"craft"="electrician"','"craft"="plumber"','"craft"="hvac"','"craft"="metal_construction"','"man_made"="works"'],
+  "Computing / IT / Tech": ['"office"="it"','"office"="telecommunication"','"shop"="computer"','"amenity"="coworking_space"','"office"="coworking"'],
+  "Architecture / Construction": ['"office"="architect"','"craft"="carpenter"','"craft"="builder"','"craft"="plumber"','"craft"="electrician"','"office"="construction_company"'],
+  "Marketing / Advertising / PR": ['"office"="advertising_agency"','"office"="marketing"','"shop"="printing"','"office"="company"'],
+  "Media / Journalism / Film": ['"office"="newspaper"','"amenity"="studio"','"office"="company"'],
+  "Art / Design / Creative": ['"shop"="art"','"tourism"="gallery"','"amenity"="arts_centre"','"craft"="photographer"','"craft"="sign_maker"'],
+  "Education / Teaching": ['"amenity"="school"','"amenity"="kindergarten"','"amenity"="college"','"amenity"="language_school"','"amenity"="library"'],
+  "Psychology / Social care": ['"healthcare"="psychotherapist"','"amenity"="clinic"','"amenity"="social_facility"','"social_facility"="group_home"'],
+  "Science / Labs / Pharma": ['"amenity"="hospital"','"amenity"="university"','"office"="research"','"healthcare"="laboratory"'],
+  "Sport / Fitness / Coaching": ['"leisure"="fitness_centre"','"leisure"="sports_centre"','"shop"="sports"'],
+  "Hospitality / Events / Tourism": ['"amenity"="restaurant"','"amenity"="cafe"','"tourism"="hotel"','"amenity"="events_venue"'],
+  "Retail / Fashion / Sales": ['"shop"="clothes"','"shop"="department_store"','"shop"="mall"','"shop"="boutique"'],
+  "Anything (general local businesses)": ['"office"="company"','"shop"="department_store"','"amenity"="bank"','"office"="estate_agent"','"shop"="clothes"','"amenity"="cafe"']
+};
+
+const LABELS = { bank:"Bank", accountant:"Accountant", financial:"Finance", financial_advisor:"Financial advisor",
+  insurance:"Insurance", estate_agent:"Estate agent", tax_advisor:"Tax advisor", company:"Company / office",
+  lawyer:"Law firm", notary:"Notary", hospital:"Hospital", clinic:"Clinic", doctors:"GP / doctors", pharmacy:"Pharmacy",
+  dentist:"Dentist", centre:"Healthcare", veterinary:"Vet", pet:"Pet shop", pet_grooming:"Pet grooming",
+  engineering:"Engineering", electrician:"Electrician", plumber:"Plumber", hvac:"HVAC", metal_construction:"Metalwork",
+  works:"Works / factory", it:"IT / software", telecommunication:"Telecoms", computer:"Computer shop",
+  coworking_space:"Coworking hub", coworking:"Coworking hub", architect:"Architect", carpenter:"Carpenter",
+  builder:"Builder", construction_company:"Construction", advertising_agency:"Ad agency", marketing:"Marketing",
+  printing:"Print / design", newspaper:"Newspaper", studio:"Studio", art:"Art shop", gallery:"Gallery",
+  arts_centre:"Arts centre", photographer:"Photographer", sign_maker:"Signage", school:"School",
+  kindergarten:"Nursery", college:"College", language_school:"Language school", library:"Library",
+  psychotherapist:"Therapist", social_facility:"Social care", group_home:"Care home", university:"University",
+  research:"Research", laboratory:"Lab", fitness_centre:"Gym", sports_centre:"Sports centre", sports:"Sports shop",
+  restaurant:"Restaurant", cafe:"Café", hotel:"Hotel", events_venue:"Events venue", clothes:"Clothing shop",
+  department_store:"Department store", mall:"Shopping centre", boutique:"Boutique" };
+
+const OVERPASS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+  "https://overpass.private.coffee/api/interpreter"
+];
+
+//// ---- elements / state ----
+const $ = id => document.getElementById(id);
+const subjectSel=$("subject"), statusEl=$("status"), resultsEl=$("results"),
+      controls=$("controls"), countEl=$("count"), hideDone=$("hideDone");
+let lastResults=[];
+
+Object.keys(SUBJECTS).forEach(s=>{const o=document.createElement("option");o.textContent=s;subjectSel.appendChild(o);});
+
+// restore saved details + last search
+const store = {
+  get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},
+  set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
+};
+$("meName").value=store.get("ws_name","")||"";
+$("meLevel").value=store.get("ws_level","sixth-form student")||"sixth-form student";
+$("loc").value=store.get("ws_loc","")||"";
+if(subjectSel.querySelector(`option[value]`)){}
+const savedSubj=store.get("ws_subj",null); if(savedSubj && SUBJECTS[savedSubj]) subjectSel.value=savedSubj;
+if(!$("meName").value) $("meAccordion").open=true;
+$("meName").oninput=e=>store.set("ws_name",e.target.value);
+$("meLevel").onchange=e=>store.set("ws_level",e.target.value);
+
+// ---- application tracker store: id -> {biz fields, status, notes, emailedAt, createdAt, updatedAt} ----
+const apps = store.get("ws_apps",{}) || {};
+function saveApps(){store.set("ws_apps",apps);}
+const STATUSES=[
+  {k:"saved",    t:"To contact",    c:"#9b8a7d"},
+  {k:"emailed",  t:"Emailed",       c:"#f59f1c"},
+  {k:"replied",  t:"Replied",       c:"#8b7bf7"},
+  {k:"interview",t:"Interview",     c:"#3a9ef5"},
+  {k:"offer",    t:"Offer 🎉",      c:"#23b083"},
+  {k:"rejected", t:"Not this time", c:"#e0644f"}
+];
+const ST=Object.fromEntries(STATUSES.map(s=>[s.k,s]));
+function statusOf(id){return apps[id]?.status||"";}
+function setAppStatus(biz,status){
+  if(!status){delete apps[biz.id];}
+  else{
+    const ex=apps[biz.id]||{};
+    apps[biz.id]={...biz,...ex, id:biz.id, status,
+      notes:ex.notes||"", createdAt:ex.createdAt||Date.now(), updatedAt:Date.now(),
+      emailedAt:(status==="emailed"&&!ex.emailedAt)?Date.now():ex.emailedAt};
+    delete apps[biz.id].dist;
+  }
+  saveApps(); updateTabCount();
+}
+function agoText(ts){if(!ts)return"";const d=Math.floor((Date.now()-ts)/86400000);
+  return d<=0?"today":d===1?"1 day ago":d+" days ago";}
+
+//// ---- helpers ----
+function setStatus(msg){statusEl.textContent=msg;}
+function haversine(a,b,c,d){const R=6371,r=x=>x*Math.PI/180,dLat=r(c-a),dLon=r(d-b);
+  const x=Math.sin(dLat/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dLon/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
+function isPostcode(s){return /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i.test(s.trim());}
+
+async function geocode(q){
+  q=q.trim();
+  if(isPostcode(q)){
+    const r=await fetch("https://api.postcodes.io/postcodes/"+encodeURIComponent(q.replace(/\s+/g,"")));
+    if(r.ok){const j=await r.json();if(j.result)return{lat:j.result.latitude,lon:j.result.longitude,name:j.result.admin_district||q};}
+  }
+  // fallback: free text place via Nominatim
+  const r2=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=gb&q="+encodeURIComponent(q),
+    {headers:{"Accept":"application/json"}});
+  if(r2.ok){const a=await r2.json();if(a[0])return{lat:+a[0].lat,lon:+a[0].lon,name:a[0].display_name.split(",")[0]};}
+  return null;
+}
+
+function labelFor(tags){
+  for(const k of ["office","amenity","healthcare","craft","shop","leisure","tourism","social_facility","man_made"]){
+    if(tags[k]&&LABELS[tags[k]])return LABELS[tags[k]];
+    if(tags[k])return tags[k].replace(/_/g," ");
+  }
+  return "Business";
+}
+function addressOf(t){
+  const p=[t["addr:housenumber"],t["addr:street"],t["addr:city"]||t["addr:town"],t["addr:postcode"]].filter(Boolean);
+  return p.join(", ");
+}
+
+async function overpass(query){
+  let lastErr="";
+  for(const url of OVERPASS){
+    try{
+      const r=await fetch(url,{method:"POST",body:"data="+encodeURIComponent(query)});
+      if(!r.ok){lastErr="status "+r.status;continue;}
+      const ct=r.headers.get("content-type")||"";
+      if(!ct.includes("json")){lastErr="server busy";continue;} // transient HTML error page
+      const j=await r.json();
+      if(j && j.remark && /error|timed out|runtime|load/i.test(j.remark)){lastErr=j.remark;continue;}
+      if(j && Array.isArray(j.elements)) return j;
+      lastErr="bad response";
+    }catch(e){lastErr=e.message;} // network/CORS -> try next mirror
+  }
+  throw new Error(lastErr||"unavailable");
+}
+
+//// ---- search ----
+async function search(){
+  const subj=subjectSel.value, loc=$("loc").value, radius=+$("radius").value;
+  if(!loc.trim()){setStatus("Enter a postcode or town first.");return;}
+  store.set("ws_subj",subj); store.set("ws_loc",loc);
+  resultsEl.innerHTML=""; controls.style.display="none";
+  setStatus("📍 Finding your location…");
+  let geo;
+  try{geo=await geocode(loc);}catch{}
+  if(!geo){setStatus("Couldn't find that place. Try a full UK postcode (e.g. M1 1AE).");return;}
+  setStatus(`🔎 Searching for ${subj.toLowerCase()} places near ${geo.name}…`);
+
+  const filters=SUBJECTS[subj];
+  const body=filters.map(f=>`nwr[${f}](around:${radius},${geo.lat},${geo.lon});`).join("\n");
+  const query=`[out:json][timeout:25];(${body});out center 120;`;
+  let data;
+  try{data=await overpass(query);}catch{setStatus("The map data service is busy. Wait a few seconds and try again.");return;}
+
+  const seen=new Set();
+  let items=(data.elements||[]).map(el=>{
+    const t=el.tags||{}; if(!t.name)return null;
+    const lat=el.lat??el.center?.lat, lon=el.lon??el.center?.lon; if(lat==null)return null;
+    const key=el.type+"/"+el.id; if(seen.has(t.name+addressOf(t)))return null; seen.add(t.name+addressOf(t));
+    return {id:key,name:t.name,label:labelFor(t),addr:addressOf(t),
+      website:t.website||t["contact:website"]||"", phone:t.phone||t["contact:phone"]||"",
+      email:t.email||t["contact:email"]||"", lat,lon, dist:haversine(geo.lat,geo.lon,lat,lon)};
+  }).filter(Boolean);
+  items.sort((a,b)=>a.dist-b.dist);
+  lastResults=items;
+  render();
+  setStatus(items.length?`✅ Found ${items.length} places. Pick a few and send them an email.`:"");
+  if(!items.length) resultsEl.innerHTML=`<div class="empty">No matches here. Try a bigger radius, a nearby town, or the "Anything" field.</div>`;
+}
+
+function statusOptions(cur){
+  return `<option value="">＋ Track</option>`+
+    STATUSES.map(s=>`<option value="${s.k}" ${s.k===cur?"selected":""}>${s.t}</option>`).join("");
+}
+function render(){
+  const hide=hideDone.checked;
+  const shown=lastResults.filter(b=>!(hide&&statusOf(b.id)));
+  controls.style.display=lastResults.length?"flex":"none";
+  countEl.textContent=`${shown.length} shown · ${Object.keys(apps).length} tracked`;
+  resultsEl.innerHTML="";
+  shown.forEach(b=>{
+    const st=statusOf(b.id);
+    const el=document.createElement("div");
+    el.className="biz"+(st?" tracked":"");
+    const maps=`https://www.google.com/maps/search/?api=1&query=${b.lat},${b.lon}`;
+    el.innerHTML=`
+      <div style="flex:1;min-width:0">
+        <h3>${esc(b.name)} ${st?`<span class="badge" style="background:${ST[st].c}">${ST[st].t}</span>`:""}</h3>
+        <span class="pill">${esc(b.label)}</span>
+        <div class="meta">
+          <span class="dist">${b.dist<1?Math.round(b.dist*1000)+" m":b.dist.toFixed(1)+" km"} away</span>
+          ${b.addr?`<span>📍 ${esc(b.addr)}</span>`:""}
+          ${b.phone?`<span>📞 ${esc(b.phone)}</span>`:""}
+          ${b.website?`<span>🌐 <a href="${esc(b.website)}" target="_blank" rel="noopener">website</a></span>`:""}
+          <span>🗺️ <a href="${maps}" target="_blank" rel="noopener">map</a></span>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn small emailBtn">✉️ Email</button>
+        <select class="statusSel">${statusOptions(st)}</select>
+      </div>`;
+    el.querySelector(".emailBtn").onclick=()=>openEmail(b);
+    el.querySelector(".statusSel").onchange=e=>{setAppStatus(b,e.target.value);render();};
+    resultsEl.appendChild(el);
+  });
+}
+function esc(s){return (s+"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+
+//// ---- email generator ----
+function emailText(b,type){
+  const name=$("meName").value.trim()||"[your name]";
+  const level=$("meLevel").value;
+  const field=subjectSel.value.split(" / ")[0].split(" (")[0];
+  const biz=b.name, kind=(b.label||"business").toLowerCase();
+  const sign=`Thank you very much for your time.\n\nBest wishes,\n${name}`;
+  if(type==="part_time"){
+    return `Subject: Part-time work enquiry — ${level}
+
+Dear ${biz} team,
+
+My name is ${name} and I'm a ${level} looking for part-time work in the local area. I wanted to ask whether you have — or are expecting — any part-time or weekend vacancies.
+
+I'm reliable, hard-working and happy to fit around your busy periods. I'd be glad to send my CV and pop in for a chat whenever suits you.
+
+${sign}`;
+  }
+  if(type==="shadowing"){
+    return `Subject: Work shadowing request — ${field} student
+
+Dear ${biz} team,
+
+My name is ${name} and I'm a ${level} really interested in ${field.toLowerCase()}. I'd love the chance to spend even a single day shadowing someone at ${biz} to see what working in this field is actually like.
+
+I promise not to get in the way — I just want to watch, learn and ask a couple of questions. Any day that suits you would be brilliant.
+
+${sign}`;
+  }
+  if(type==="apprenticeship"){
+    return `Subject: Apprenticeship enquiry — ${level}
+
+Dear ${biz} team,
+
+My name is ${name} and I'm a ${level} keen to build a career in ${field.toLowerCase()}. I'm writing to ask whether ${biz} offers any apprenticeships or trainee positions, now or in the near future.
+
+I'm motivated, eager to learn on the job, and happy to send my CV and references.
+
+${sign}`;
+  }
+  return `Subject: Work experience enquiry — ${field} student
+
+Dear ${biz} team,
+
+My name is ${name} and I'm a ${level} with a strong interest in ${field.toLowerCase()}. I'm reaching out to ask whether you'd consider hosting me for a short work-experience placement — even a few days, paid or unpaid.
+
+I'm reliable, genuinely keen to learn, and happy to help with whatever would be useful to you. Seeing how a real ${kind} like yours works would mean a lot for my studies and future plans.
+
+I'd be glad to send my CV and work around your schedule. Would you be open to a quick chat?
+
+${sign}`;
+}
+function openEmail(b){
+  $("mTitle").textContent="Email to "+b.name;
+  $("mSub").innerHTML=(b.email?`Send to <strong>${esc(b.email)}</strong>`:"No email listed — check their ")+(b.email?"":`<a href="${esc(b.website||('https://www.google.com/search?q='+encodeURIComponent(b.name+" contact")))}" target="_blank" rel="noopener">website / contact page</a>.`);
+  $("mType").value=store.get("ws_emailtype","work_experience");
+  $("mBody").value=emailText(b,$("mType").value);
+  $("mType").onchange=()=>{store.set("ws_emailtype",$("mType").value);$("mBody").value=emailText(b,$("mType").value);};
+  $("modal").classList.add("open");
+  $("mCopy").onclick=async()=>{await navigator.clipboard.writeText($("mBody").value);$("mCopy").textContent="Copied ✓";setTimeout(()=>$("mCopy").textContent="Copy email",1500);};
+  $("mMail").onclick=()=>{
+    const txt=$("mBody").value, subjLine=(txt.match(/^Subject: (.*)$/m)||[])[1]||"Work experience enquiry";
+    const bodyOnly=txt.replace(/^Subject:.*\n\n?/, "");
+    window.location.href=`mailto:${b.email||""}?subject=${encodeURIComponent(subjLine)}&body=${encodeURIComponent(bodyOnly)}`;
+    const cur=statusOf(b.id);
+    if(!cur||cur==="saved") setAppStatus(b,"emailed");
+    render(); renderApps();
+  };
+}
+$("mClose").onclick=()=>$("modal").classList.remove("open");
+$("modal").onclick=e=>{if(e.target.id==="modal")$("modal").classList.remove("open");};
+
+//// ---- applications view ----
+const appsList=$("appsList"), appsStats=$("appsStats"), appsCountEl=$("appsCount");
+function updateTabCount(){appsCountEl.textContent=Object.keys(apps).length;}
+const ORDER=["offer","interview","replied","emailed","saved","rejected"];
+function renderApps(){
+  const list=Object.values(apps);
+  const c=k=>list.filter(a=>a.status===k).length;
+  appsStats.innerHTML = list.length?[
+    ["📋",list.length,"tracked"],["✉️",c("emailed"),"emailed"],["💬",c("replied"),"replied"],
+    ["🎤",c("interview"),"interviews"],["🎉",c("offer"),"offers"]
+  ].map(([e,n,l])=>`<div class="stat"><b>${n}</b><span>${l}</span></div>`).join(""):"";
+  list.sort((a,b)=>(ORDER.indexOf(a.status)-ORDER.indexOf(b.status))||((b.updatedAt||0)-(a.updatedAt||0)));
+  appsList.innerHTML="";
+  if(!list.length){
+    appsList.innerHTML=`<div class="empty">No applications yet. 📋<br>Find places in the first tab, then hit <b>＋ Track</b> or <b>✉️ Email</b> to start your pipeline.</div>`;
+    return;
+  }
+  list.forEach(a=>{
+    const el=document.createElement("div");
+    el.className="biz";
+    const stc=ST[a.status]?.c||"#999", stt=ST[a.status]?.t||a.status;
+    el.innerHTML=`
+      <div style="flex:1;min-width:0">
+        <h3>${esc(a.name)} <span class="badge" style="background:${stc}">${stt}</span></h3>
+        <div class="meta">
+          <span class="pill">${esc(a.label||"")}</span>
+          ${a.addr?`<span>📍 ${esc(a.addr)}</span>`:""}
+          ${a.phone?`<span>📞 ${esc(a.phone)}</span>`:""}
+          ${a.website?`<span>🌐 <a href="${esc(a.website)}" target="_blank" rel="noopener">website</a></span>`:""}
+          ${a.emailedAt?`<span class="ago">✉️ emailed ${agoText(a.emailedAt)}</span>`:""}
+        </div>
+        <textarea class="notes" placeholder="Notes — who you spoke to, what they said, next step…">${esc(a.notes||"")}</textarea>
+      </div>
+      <div class="actions">
+        <button class="btn small emailBtn">✉️ Email</button>
+        <select class="statusSel">${STATUSES.map(s=>`<option value="${s.k}" ${s.k===a.status?"selected":""}>${s.t}</option>`).join("")}</select>
+        <button class="btn alt small rmBtn">Remove</button>
+      </div>`;
+    el.querySelector(".emailBtn").onclick=()=>openEmail(a);
+    el.querySelector(".statusSel").onchange=e=>{setAppStatus(a,e.target.value);renderApps();};
+    el.querySelector(".notes").onblur=e=>{if(apps[a.id]){apps[a.id].notes=e.target.value;saveApps();}};
+    el.querySelector(".rmBtn").onclick=()=>{delete apps[a.id];saveApps();updateTabCount();renderApps();};
+    appsList.appendChild(el);
+  });
+}
+
+//// ---- wire up ----
+$("searchBtn").onclick=search;
+$("loc").addEventListener("keydown",e=>{if(e.key==="Enter")search();});
+hideDone.onchange=render;
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  t.classList.add("active");
+  const v=t.dataset.view;
+  $("findView").style.display = v==="find"?"":"none";
+  $("appsView").style.display = v==="apps"?"":"none";
+  $("jobsView").style.display = v==="jobs"?"":"none";
+  if(v==="apps") renderApps();
+  if(v==="jobs" && !$("jobWhere").value) $("jobWhere").value=store.get("ws_loc","")||"";
+});
+updateTabCount();
+
+//// ---- part-time jobs (Adzuna) ----
+const jobResultsEl=$("jobResults"), jobStatusEl=$("jobStatus");
+$("adzId").value=store.get("ws_adzId","")||"";
+$("adzKey").value=store.get("ws_adzKey","")||"";
+$("jobWhere").value=store.get("ws_loc","")||"";
+
+async function fetchJobs(url){
+  try{
+    const r=await fetch(url);
+    if(r.status===401||r.status===403) throw new Error("Adzuna rejected your keys");
+    if(r.ok) return await r.json();
+  }catch(e){ if(/keys/.test(e.message)) throw e; }   // CORS/network -> try proxy
+  const r2=await fetch("https://api.allorigins.win/raw?url="+encodeURIComponent(url));
+  if(!r2.ok) throw new Error("couldn't reach the jobs service");
+  return await r2.json();
+}
+
+async function jobsSearch(){
+  const id=$("adzId").value.trim(), key=$("adzKey").value.trim();
+  store.set("ws_adzId",id); store.set("ws_adzKey",key);
+  let where=$("jobWhere").value.trim();
+  const what=$("jobWhat").value.trim()||"part time";
+  if(!where){jobStatusEl.textContent="Enter a postcode or town first.";return;}
+  store.set("ws_loc",where);
+  if(!id||!key){jobStatusEl.textContent="👆 Add your free Adzuna App ID + Key (one-time setup above) to load live jobs.";$("adzKeyBox").open=true;return;}
+  jobStatusEl.textContent="💼 Finding part-time jobs…"; jobResultsEl.innerHTML="";
+  if(isPostcode(where)){try{const g=await geocode(where);if(g&&g.name)where=g.name;}catch{}}
+  const url=`https://api.adzuna.com/v1/api/jobs/gb/search/1?app_id=${encodeURIComponent(id)}&app_key=${encodeURIComponent(key)}`+
+            `&results_per_page=25&what=${encodeURIComponent(what)}&where=${encodeURIComponent(where)}&distance=12&content-type=application/json`;
+  let data;
+  try{ data=await fetchJobs(url); }
+  catch(e){ jobStatusEl.textContent="Couldn't load jobs — "+e.message+". Double-check your Adzuna keys."; return; }
+  const jobs=data.results||[];
+  if(!jobs.length){jobStatusEl.textContent="No part-time jobs found here. Try a different keyword or a nearby town.";return;}
+  jobStatusEl.textContent=`✅ Found ${jobs.length} part-time jobs near ${esc(where)}.`;
+  jobResultsEl.innerHTML="";
+  jobs.forEach(j=>{
+    const el=document.createElement("div"); el.className="biz";
+    const sal=j.salary_min?`£${Math.round(j.salary_min).toLocaleString()}${(j.salary_max&&Math.round(j.salary_max)!==Math.round(j.salary_min))?"–£"+Math.round(j.salary_max).toLocaleString():""}`:"";
+    el.innerHTML=`
+      <div style="flex:1;min-width:0">
+        <h3>${esc(j.title||"Job")}</h3>
+        <div class="meta">
+          ${j.company&&j.company.display_name?`<span>🏢 ${esc(j.company.display_name)}</span>`:""}
+          ${j.location&&j.location.display_name?`<span>📍 ${esc(j.location.display_name)}</span>`:""}
+          ${sal?`<span class="dist">${sal}</span>`:""}
+        </div>
+        <div class="hint" style="margin-top:8px">${esc((j.description||"").slice(0,170))}…</div>
+      </div>
+      <div class="actions">
+        <a class="btn small" style="text-align:center;text-decoration:none" href="${esc(j.redirect_url||"#")}" target="_blank" rel="noopener">View &amp; apply ↗</a>
+      </div>`;
+    jobResultsEl.appendChild(el);
+  });
+}
+$("jobSearchBtn").onclick=jobsSearch;
+$("jobWhere").addEventListener("keydown",e=>{if(e.key==="Enter")jobsSearch();});
+</script>
+</body>
+</html>
