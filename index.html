@@ -237,9 +237,18 @@
           </select>
         </div>
         <div><label>Postcode or town</label><input id="jobWhere" placeholder="e.g. M1 1AE or Leeds" /></div>
-        <div><label>&nbsp;</label><button class="btn" id="jobSearchBtn">💼 Find jobs</button></div>
+        <div><label>Within</label>
+          <select id="jobRadius">
+            <option value="3">3 km</option>
+            <option value="5">5 km</option>
+            <option value="10" selected>10 km</option>
+            <option value="20">20 km</option>
+            <option value="40">40 km</option>
+          </select>
+        </div>
       </div>
       <div style="margin-top:12px"><label>Keyword (optional)</label><input id="jobWhat" placeholder="e.g. retail, café, weekend, tutoring" /></div>
+      <div style="margin-top:12px"><button class="btn" id="jobSearchBtn" style="width:100%">💼 Find jobs</button></div>
       <div class="hint" style="margin-top:10px">💼 Live UK listings via Adzuna. Tap any job to apply on the original site.</div>
     </div>
     <div id="jobStatus"></div>
@@ -455,12 +464,14 @@ async function search(){
     return {id:key,name:t.name,label:labelFor(t),addr:addressOf(t),
       website:t.website||t["contact:website"]||"", phone:t.phone||t["contact:phone"]||"",
       email:t.email||t["contact:email"]||"", lat,lon, dist:haversine(geo.lat,geo.lon,lat,lon)};
-  }).filter(Boolean);
+  }).filter(Boolean)
+    // Only keep places you can actually act on: a real address (mappable) OR a contact.
+    .filter(b=>b.addr||b.website||b.phone||b.email);
   items.sort((a,b)=>a.dist-b.dist);
   lastResults=items;
   render();
-  setStatus(items.length?`✅ Found ${items.length} places. Pick a few and send them an email.`:"");
-  if(!items.length) resultsEl.innerHTML=`<div class="empty">No matches here. Try a bigger radius, a nearby town, or the "Anything" field.</div>`;
+  setStatus(items.length?`✅ Found ${items.length} places you can visit or contact. Pick a few and send them an email.`:"");
+  if(!items.length) resultsEl.innerHTML=`<div class="empty">No contactable matches here. Try a bigger radius, a nearby town, or the "Anything" field.</div>`;
 }
 
 function statusOptions(cur){
@@ -477,18 +488,16 @@ function render(){
     const st=statusOf(b.id);
     const el=document.createElement("div");
     el.className="biz"+(st?" tracked":"");
-    const mq=b.addr?encodeURIComponent(b.name+", "+b.addr):`${b.lat},${b.lon}`;
-    const maps=`https://www.google.com/maps/search/?api=1&query=${mq}`;
+    const maps=b.addr?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.name+", "+b.addr)}`:"";
     el.innerHTML=`
       <div style="flex:1;min-width:0">
         <h3>${esc(b.name)} ${st?`<span class="badge" style="background:${ST[st].c}">${ST[st].t}</span>`:""}</h3>
         <span class="pill">${esc(b.label)}</span>
         <div class="meta">
           <span class="dist">${b.dist<1?Math.round(b.dist*1000)+" m":b.dist.toFixed(1)+" km"} away</span>
-          ${b.addr?`<span>📍 <a href="${maps}" target="_blank" rel="noopener">${esc(b.addr)}</a></span>`:""}
+          ${b.addr?`<span>📍 <a href="${maps}" target="_blank" rel="noopener">${esc(b.addr)} · map ↗</a></span>`:""}
           ${b.phone?`<span>📞 <a href="tel:${esc(b.phone.replace(/\s+/g,''))}">${esc(b.phone)}</a></span>`:""}
-          ${b.website?`<span>🌐 <a href="${esc(b.website)}" target="_blank" rel="noopener">website</a></span>`:""}
-          <span><a href="${maps}" target="_blank" rel="noopener">🗺️ Open in Maps ↗</a></span>
+          ${b.website?`<span>🌐 <a href="${esc(b.website)}" target="_blank" rel="noopener">website ↗</a></span>`:""}
         </div>
       </div>
       <div class="actions">
@@ -506,57 +515,63 @@ function esc(s){return (s+"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">"
 function emailText(b,type){
   const name=$("meName").value.trim()||"[your name]";
   const level=$("meLevel").value;
-  const field=subjectSel.value.split(" / ")[0].split(" (")[0];
-  const biz=b.name, kind=(b.label||"business").toLowerCase();
-  const sign=`Thank you very much for your time.\n\nBest wishes,\n${name}`;
+  const field=subjectSel.value.split(" / ")[0].split(" (")[0].toLowerCase();
+  const biz=b.name;
   if(type==="part_time"){
-    return `Subject: Part-time work enquiry — ${level}
+    return `Subject: Any part-time work going?
 
-Dear ${biz} team,
+Hi ${biz},
 
-My name is ${name} and I'm a ${level} looking for part-time work in the local area. I wanted to ask whether you have — or are expecting — any part-time or weekend vacancies.
+I'm ${name}, a ${level} living nearby, and I'm on the hunt for a bit of part-time work. I wondered if you've got any weekend or evening shifts going at the moment, or might have soon?
 
-I'm reliable, hard-working and happy to fit around your busy periods. I'd be glad to send my CV and pop in for a chat whenever suits you.
+I'm reliable, I pick things up quickly, and I'm happy to work around your busier times. I can send my CV over and pop in for a quick chat whenever suits you.
 
-${sign}`;
+Thanks so much for reading,
+${name}`;
   }
   if(type==="shadowing"){
-    return `Subject: Work shadowing request — ${field} student
+    return `Subject: Could I shadow you for a day?
 
-Dear ${biz} team,
+Hi ${biz},
 
-My name is ${name} and I'm a ${level} really interested in ${field.toLowerCase()}. I'd love the chance to spend even a single day shadowing someone at ${biz} to see what working in this field is actually like.
+I'm ${name}, a ${level} who's really into ${field}. I know this is a bit out of the blue — I was wondering if I could come in and shadow someone for even just a day, to see what the work's actually like up close.
 
-I promise not to get in the way — I just want to watch, learn and ask a couple of questions. Any day that suits you would be brilliant.
+I'd stay out of the way, I promise; I just want to watch, learn and maybe ask the odd question. Honestly, any day that works for you would be brilliant.
 
-${sign}`;
+Thanks a lot,
+${name}`;
   }
   if(type==="apprenticeship"){
-    return `Subject: Apprenticeship enquiry — ${level}
+    return `Subject: Do you take on apprentices?
 
-Dear ${biz} team,
+Hi ${biz},
 
-My name is ${name} and I'm a ${level} keen to build a career in ${field.toLowerCase()}. I'm writing to ask whether ${biz} offers any apprenticeships or trainee positions, now or in the near future.
+I'm ${name}, a ${level} hoping to get into ${field}. I wanted to ask whether you ever take on apprentices or trainees — whether that's now or somewhere down the line.
 
-I'm motivated, eager to learn on the job, and happy to send my CV and references.
+I'm genuinely up for learning on the job and putting the work in. Happy to send my CV and references over if that's useful.
 
-${sign}`;
+Thanks for your time,
+${name}`;
   }
-  return `Subject: Work experience enquiry — ${field} student
+  return `Subject: Any chance of some work experience?
 
-Dear ${biz} team,
+Hi ${biz},
 
-My name is ${name} and I'm a ${level} with a strong interest in ${field.toLowerCase()}. I'm reaching out to ask whether you'd consider hosting me for a short work-experience placement — even a few days, paid or unpaid.
+I'm ${name}, a ${level} from round here, and I'm really interested in ${field}. I know it's a bit cheeky asking out of nowhere, but I wondered if there's any chance I could do a few days' work experience with you — paid or unpaid, whatever works for you.
 
-I'm reliable, genuinely keen to learn, and happy to help with whatever would be useful to you. Seeing how a real ${kind} like yours works would mean a lot for my studies and future plans.
+I'm happy to help out with whatever's useful and fit around you. Even a short visit would genuinely mean a lot for what I'm hoping to do next.
 
-I'd be glad to send my CV and work around your schedule. Would you be open to a quick chat?
+If you're up for it, I can send my CV over and sort out a time. Totally understand if not!
 
-${sign}`;
+Cheers,
+${name}`;
 }
 function openEmail(b){
   $("mTitle").textContent="Email to "+b.name;
-  $("mSub").innerHTML=(b.email?`Send to <strong>${esc(b.email)}</strong>`:"No email listed — check their ")+(b.email?"":`<a href="${esc(b.website||('https://www.google.com/search?q='+encodeURIComponent(b.name+" contact")))}" target="_blank" rel="noopener">website / contact page</a>.`);
+  $("mSub").innerHTML = b.email ? `Send to <strong>${esc(b.email)}</strong>`
+    : (b.website ? `No email listed — grab their address from <a href="${esc(b.website)}" target="_blank" rel="noopener">their website ↗</a>.`
+    : (b.phone ? `No email listed — try calling <strong>${esc(b.phone)}</strong>, or pop in.`
+    : `No email listed — best to call in or visit.`));
   $("mType").value=store.get("ws_emailtype","work_experience");
   $("mBody").value=emailText(b,$("mType").value);
   $("mType").onchange=()=>{store.set("ws_emailtype",$("mType").value);$("mBody").value=emailText(b,$("mType").value);};
@@ -640,11 +655,13 @@ updateTabCount();
 const jobResultsEl=$("jobResults"), jobStatusEl=$("jobStatus");
 $("jobWhere").value=store.get("ws_loc","")||"";
 $("jobType").value=store.get("ws_jobtype","part_time")||"part_time";
+$("jobRadius").value=store.get("ws_jobradius","10")||"10";
 
 async function jobsSearch(){
   let where=$("jobWhere").value.trim();
   const what=$("jobWhat").value.trim();
   const type=$("jobType").value; store.set("ws_jobtype",type);
+  const radius=$("jobRadius").value; store.set("ws_jobradius",radius);
   const tw = type==="full_time" ? "full-time " : type==="part_time" ? "part-time " : "";
   if(!where){jobStatusEl.textContent="Enter a postcode or town first.";return;}
   store.set("ws_loc",where);
@@ -652,7 +669,7 @@ async function jobsSearch(){
   if(isPostcode(where)){try{const g=await geocode(where);if(g&&g.name)where=g.name;}catch{}}
   let data;
   try{
-    const r=await fetch(`/api/jobs?type=${encodeURIComponent(type)}${what?`&what=${encodeURIComponent(what)}`:""}&where=${encodeURIComponent(where)}&distance=12`);
+    const r=await fetch(`/api/jobs?type=${encodeURIComponent(type)}${what?`&what=${encodeURIComponent(what)}`:""}&where=${encodeURIComponent(where)}&distance=${encodeURIComponent(radius)}`);
     data=await r.json().catch(()=>({}));
     if(!r.ok) throw new Error(data.error||("HTTP "+r.status));
   }catch(e){
