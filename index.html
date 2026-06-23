@@ -517,54 +517,57 @@ function emailText(b,type){
   const level=$("meLevel").value;
   const field=subjectSel.value.split(" / ")[0].split(" (")[0].toLowerCase();
   const biz=b.name;
+  const sign=`Kind regards,\n${name}`;
   if(type==="part_time"){
-    return `Subject: Any part-time work going?
+    return `Subject: Part-time work enquiry
 
-Hi ${biz},
+Hello ${biz},
 
-I'm ${name}, a ${level} living nearby, and I'm on the hunt for a bit of part-time work. I wondered if you've got any weekend or evening shifts going at the moment, or might have soon?
+I'm ${name}, a ${level} living locally, and I'm currently looking for part-time work. I wanted to ask whether you have, or might soon have, any part-time or weekend vacancies.
 
-I'm reliable, I pick things up quickly, and I'm happy to work around your busier times. I can send my CV over and pop in for a quick chat whenever suits you.
+I'm reliable, quick to learn, and happy to work around your busier periods. I'd be glad to send my CV and come in for a chat whenever suits you.
 
-Thanks so much for reading,
-${name}`;
+Thank you for your time.
+
+${sign}`;
   }
   if(type==="shadowing"){
-    return `Subject: Could I shadow you for a day?
+    return `Subject: Work shadowing request
 
-Hi ${biz},
+Hello ${biz},
 
-I'm ${name}, a ${level} who's really into ${field}. I know this is a bit out of the blue — I was wondering if I could come in and shadow someone for even just a day, to see what the work's actually like up close.
+I'm ${name}, a ${level} with a strong interest in ${field}. I'd be grateful for the chance to spend a day shadowing someone at your ${(b.label||"workplace").toLowerCase()}, simply to see what the work involves first-hand.
 
-I'd stay out of the way, I promise; I just want to watch, learn and maybe ask the odd question. Honestly, any day that works for you would be brilliant.
+I'd keep out of the way and just observe and learn where I can. Any day that suits you would be much appreciated.
 
-Thanks a lot,
-${name}`;
+Thank you for considering it.
+
+${sign}`;
   }
   if(type==="apprenticeship"){
-    return `Subject: Do you take on apprentices?
+    return `Subject: Apprenticeship enquiry
 
-Hi ${biz},
+Hello ${biz},
 
-I'm ${name}, a ${level} hoping to get into ${field}. I wanted to ask whether you ever take on apprentices or trainees — whether that's now or somewhere down the line.
+I'm ${name}, a ${level} hoping to build a career in ${field}. I'm writing to ask whether you offer any apprenticeships or trainee positions, either now or in the near future.
 
-I'm genuinely up for learning on the job and putting the work in. Happy to send my CV and references over if that's useful.
+I'm keen to learn on the job and ready to work hard. I'd be happy to send my CV and references.
 
-Thanks for your time,
-${name}`;
+Thank you for your time.
+
+${sign}`;
   }
-  return `Subject: Any chance of some work experience?
+  return `Subject: Work experience enquiry
 
-Hi ${biz},
+Hello ${biz},
 
-I'm ${name}, a ${level} from round here, and I'm really interested in ${field}. I know it's a bit cheeky asking out of nowhere, but I wondered if there's any chance I could do a few days' work experience with you — paid or unpaid, whatever works for you.
+I'm ${name}, a ${level} with a genuine interest in ${field}. I'm writing to ask whether you might be able to offer me a short work-experience placement — even a few days would be really valuable, whether paid or unpaid.
 
-I'm happy to help out with whatever's useful and fit around you. Even a short visit would genuinely mean a lot for what I'm hoping to do next.
+I'm hard-working and happy to help wherever useful, and I can fit around whatever works best for you. I'd be glad to send my CV and arrange a time that suits.
 
-If you're up for it, I can send my CV over and sort out a time. Totally understand if not!
+Thank you for considering it.
 
-Cheers,
-${name}`;
+${sign}`;
 }
 function openEmail(b){
   $("mTitle").textContent="Email to "+b.name;
