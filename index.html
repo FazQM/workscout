@@ -400,6 +400,12 @@ function addressOf(t){
 }
 
 async function overpass(query){
+  // Prefer the same-origin serverless proxy (reliable, no CORS). Falls back to
+  // public mirrors below (e.g. for local dev where /api isn't available).
+  try{
+    const pr=await fetch("/api/places",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({query})});
+    if(pr.ok){const pj=await pr.json(); if(pj && Array.isArray(pj.elements)) return pj;}
+  }catch(e){}
   let lastErr="";
   for(const url of OVERPASS){
     try{
