@@ -216,9 +216,14 @@
     <label style="display:flex;align-items:center;gap:7px;color:var(--muted);font-size:13px;font-weight:600;margin:0">
       <input type="checkbox" id="hideDone" style="width:auto" /> Hide ones I'm tracking
     </label>
+    <label style="display:flex;align-items:center;gap:7px;color:var(--muted);font-size:13px;font-weight:600;margin:0">
+      <input type="checkbox" id="onlineOnly" style="width:auto" /> Only firms with a website/phone
+    </label>
   </div>
+  <div id="localWarn" class="hint" style="display:none;margin:0 2px 14px">ℹ️ Some of these are smaller local firms with no contact details listed — for those you may need to pop in or look them up yourself.</div>
 
   <div class="grid" id="results"></div>
+  <button id="placesMore" class="btn alt" style="display:none;width:100%;margin-top:14px">Load more</button>
   </div><!-- /findView -->
 
   <div id="appsView" style="display:none">
@@ -253,6 +258,7 @@
     </div>
     <div id="jobStatus"></div>
     <div class="grid" id="jobResults"></div>
+    <button id="jobMore" class="btn alt" style="display:none;width:100%;margin-top:14px">Load more jobs</button>
   </div>
 
   <footer>
@@ -452,7 +458,7 @@ async function search(){
 
   const filters=SUBJECTS[subj];
   const body=filters.map(f=>`nwr[${f}](around:${radius},${geo.lat},${geo.lon});`).join("\n");
-  const query=`[out:json][timeout:25];(${body});out center 120;`;
+  const query=`[out:json][timeout:25];(${body});out center 250;`;
   let data;
   try{data=await overpass(query);}catch{setStatus("The map data service is busy. Wait a few seconds and try again.");return;}
 
@@ -469,6 +475,7 @@ async function search(){
     .filter(b=>b.addr||b.website||b.phone||b.email);
   items.sort((a,b)=>a.dist-b.dist);
   lastResults=items;
+  placesShown=25;
   render();
   setStatus(items.length?`✅ Found ${items.length} places you can visit or contact. Pick a few and send them an email.`:"");
   if(!items.length) resultsEl.innerHTML=`<div class="empty">No contactable matches here. Try a bigger radius, a nearby town, or the "Anything" field.</div>`;
@@ -478,13 +485,18 @@ function statusOptions(cur){
   return `<option value="">＋ Track</option>`+
     STATUSES.map(s=>`<option value="${s.k}" ${s.k===cur?"selected":""}>${s.t}</option>`).join("");
 }
+let placesShown=25;
 function render(){
-  const hide=hideDone.checked;
-  const shown=lastResults.filter(b=>!(hide&&statusOf(b.id)));
+  const hide=hideDone.checked, online=$("onlineOnly").checked;
+  let shown=lastResults.filter(b=>!(hide&&statusOf(b.id)));
+  if(online) shown=shown.filter(b=>b.website||b.phone||b.email);
   controls.style.display=lastResults.length?"flex":"none";
-  countEl.textContent=`${shown.length} shown · ${Object.keys(apps).length} tracked`;
+  const lw=$("localWarn");
+  if(lw){const hasLocalOnly=lastResults.some(b=>!(b.website||b.phone||b.email)); lw.style.display=(!online&&hasLocalOnly&&lastResults.length)?"":"none";}
+  const visible=shown.slice(0,placesShown);
+  countEl.textContent=`Showing ${visible.length} of ${shown.length} · ${Object.keys(apps).length} tracked`;
   resultsEl.innerHTML="";
-  shown.forEach(b=>{
+  visible.forEach(b=>{
     const st=statusOf(b.id);
     const el=document.createElement("div");
     el.className="biz"+(st?" tracked":"");
@@ -508,6 +520,8 @@ function render(){
     el.querySelector(".statusSel").onchange=e=>{setAppStatus(b,e.target.value);render();};
     resultsEl.appendChild(el);
   });
+  const more=$("placesMore");
+  if(more){const extra=shown.length-placesShown;more.style.display=extra>0?"":"none";more.textContent=`Load more (${extra} more)`;}
 }
 function esc(s){return (s+"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 
@@ -523,7 +537,7 @@ function emailText(b,type){
 
 Hello ${biz},
 
-I'm ${name}, a ${level} living locally, and I'm currently looking for part-time work. I wanted to ask whether you have, or might soon have, any part-time or weekend vacancies.
+I'm ${name}, a ${level} living locally, and I'm currently looking for part-time work. I wanted to ask whether ${biz} has, or might soon have, any part-time or weekend vacancies.
 
 I'm reliable, quick to learn, and happy to work around your busier periods. I'd be glad to send my CV and come in for a chat whenever suits you.
 
@@ -549,7 +563,7 @@ ${sign}`;
 
 Hello ${biz},
 
-I'm ${name}, a ${level} hoping to build a career in ${field}. I'm writing to ask whether you offer any apprenticeships or trainee positions, either now or in the near future.
+I'm ${name}, a ${level} hoping to build a career in ${field}. I'm writing to ask whether ${biz} offers any apprenticeships or trainee positions, either now or in the near future.
 
 I'm keen to learn on the job and ready to work hard. I'd be happy to send my CV and references.
 
@@ -561,7 +575,7 @@ ${sign}`;
 
 Hello ${biz},
 
-I'm ${name}, a ${level} with a genuine interest in ${field}. I'm writing to ask whether you might be able to offer me a short work-experience placement — even a few days would be really valuable, whether paid or unpaid.
+I'm ${name}, a ${level} with a genuine interest in ${field}, and ${biz} stood out as somewhere I'd really value learning. I'm writing to ask whether you might be able to offer me a short work-experience placement — even a few days would be valuable, whether paid or unpaid.
 
 I'm hard-working and happy to help wherever useful, and I can fit around whatever works best for you. I'd be glad to send my CV and arrange a time that suits.
 
@@ -642,6 +656,7 @@ function renderApps(){
 $("searchBtn").onclick=search;
 $("loc").addEventListener("keydown",e=>{if(e.key==="Enter")search();});
 hideDone.onchange=render;
+$("onlineOnly").onchange=()=>{placesShown=25;render();};
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
   t.classList.add("active");
@@ -660,6 +675,7 @@ $("jobWhere").value=store.get("ws_loc","")||"";
 $("jobType").value=store.get("ws_jobtype","part_time")||"part_time";
 $("jobRadius").value=store.get("ws_jobradius","10")||"10";
 
+let jobPage=1, jobQuery=null;
 async function jobsSearch(){
   let where=$("jobWhere").value.trim();
   const what=$("jobWhat").value.trim();
@@ -668,25 +684,15 @@ async function jobsSearch(){
   const tw = type==="full_time" ? "full-time " : type==="part_time" ? "part-time " : "";
   if(!where){jobStatusEl.textContent="Enter a postcode or town first.";return;}
   store.set("ws_loc",where);
-  jobStatusEl.textContent=`💼 Finding ${tw}jobs…`; jobResultsEl.innerHTML="";
+  jobStatusEl.textContent=`💼 Finding ${tw}jobs…`; jobResultsEl.innerHTML=""; $("jobMore").style.display="none";
   if(isPostcode(where)){try{const g=await geocode(where);if(g&&g.name)where=g.name;}catch{}}
-  let data;
-  try{
-    const r=await fetch(`/api/jobs?type=${encodeURIComponent(type)}${what?`&what=${encodeURIComponent(what)}`:""}&where=${encodeURIComponent(where)}&distance=${encodeURIComponent(radius)}`);
-    data=await r.json().catch(()=>({}));
-    if(!r.ok) throw new Error(data.error||("HTTP "+r.status));
-  }catch(e){
-    jobStatusEl.textContent="Couldn't load jobs — "+e.message;
-    return;
-  }
-  const jobs=data.results||[];
-  if(!jobs.length){jobStatusEl.textContent=`No ${tw}jobs found here. Try a different keyword or a nearby town.`;return;}
-  jobStatusEl.textContent=`✅ Found ${jobs.length} ${tw}jobs near ${esc(where)}.`;
-  jobResultsEl.innerHTML="";
-  jobs.forEach(j=>{
-    const el=document.createElement("div"); el.className="biz";
-    const sal=j.salary_min?`£${Math.round(j.salary_min).toLocaleString()}${(j.salary_max&&Math.round(j.salary_max)!==Math.round(j.salary_min))?"–£"+Math.round(j.salary_max).toLocaleString():""}`:"";
-    el.innerHTML=`
+  jobQuery={type,what,where,radius,tw}; jobPage=1;
+  await loadJobsPage(true);
+}
+function jobCard(j){
+  const el=document.createElement("div"); el.className="biz";
+  const sal=j.salary_min?`£${Math.round(j.salary_min).toLocaleString()}${(j.salary_max&&Math.round(j.salary_max)!==Math.round(j.salary_min))?"–£"+Math.round(j.salary_max).toLocaleString():""}`:"";
+  el.innerHTML=`
       <div style="flex:1;min-width:0">
         <h3>${esc(j.title||"Job")}</h3>
         <div class="meta">
@@ -699,11 +705,32 @@ async function jobsSearch(){
       <div class="actions">
         <a class="btn small" style="text-align:center;text-decoration:none" href="${esc(j.redirect_url||"#")}" target="_blank" rel="noopener">View &amp; apply ↗</a>
       </div>`;
-    jobResultsEl.appendChild(el);
-  });
+  return el;
 }
+async function loadJobsPage(replace){
+  if(!jobQuery) return;
+  const {type,what,where,radius,tw}=jobQuery;
+  const more=$("jobMore"); more.disabled=true; more.textContent="Loading…";
+  let data;
+  try{
+    const r=await fetch(`/api/jobs?type=${encodeURIComponent(type)}${what?`&what=${encodeURIComponent(what)}`:""}&where=${encodeURIComponent(where)}&distance=${encodeURIComponent(radius)}&page=${jobPage}`);
+    data=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(data.error||("HTTP "+r.status));
+  }catch(e){ jobStatusEl.textContent="Couldn't load jobs — "+e.message; more.style.display="none"; return; }
+  const jobs=data.results||[];
+  if(replace) jobResultsEl.innerHTML="";
+  if(replace && !jobs.length){ jobStatusEl.textContent=`No ${tw}jobs found here. Try a different keyword or a nearby town.`; more.style.display="none"; return; }
+  jobs.forEach(j=>jobResultsEl.appendChild(jobCard(j)));
+  const total=jobResultsEl.querySelectorAll(".biz").length;
+  jobStatusEl.textContent=`✅ Showing ${total} ${tw}jobs near ${esc(where)}.`;
+  more.disabled=false; more.textContent="Load more jobs";
+  more.style.display=(jobs.length>=25 && jobPage<10)?"":"none";
+}
+function loadMoreJobs(){ jobPage++; loadJobsPage(false); }
 $("jobSearchBtn").onclick=jobsSearch;
 $("jobWhere").addEventListener("keydown",e=>{if(e.key==="Enter")jobsSearch();});
+$("jobMore").onclick=loadMoreJobs;
+$("placesMore").onclick=()=>{placesShown+=25;render();};
 </script>
 </body>
 </html>
